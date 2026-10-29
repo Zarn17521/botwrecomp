@@ -1,4 +1,4 @@
-Name: Build BotWRecomp iOS IPA (No-BC Retry)
+name: Build BotWRecomp iOS IPA (No-BC Retry)
 
 on:
   workflow_dispatch:
