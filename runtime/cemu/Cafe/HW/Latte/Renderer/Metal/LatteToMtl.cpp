@@ -197,15 +197,15 @@ void CheckForPixelFormatSupport(const MetalPixelFormatSupport& support)
             e.isAlternateFormat = true;
         };
         using F = Latte::E_GX2SURFFMT;
-        bcFallback(F::BC1_UNORM, MTL::PixelFormatRGBA32Float, 16, TextureDecoder_BC1_UNORM_uncompress::getInstance());
-        bcFallback(F::BC1_SRGB, MTL::PixelFormatRGBA32Float, 16, TextureDecoder_BC1_SRGB_uncompress::getInstance());
-        bcFallback(F::BC2_UNORM, MTL::PixelFormatRGBA32Float, 16, TextureDecoder_BC2_UNORM_uncompress::getInstance());
-        bcFallback(F::BC2_SRGB, MTL::PixelFormatRGBA32Float, 16, TextureDecoder_BC2_SRGB_uncompress::getInstance());
-        bcFallback(F::BC3_UNORM, MTL::PixelFormatRGBA32Float, 16, TextureDecoder_BC3_UNORM_uncompress::getInstance());
-        bcFallback(F::BC3_SRGB, MTL::PixelFormatRGBA32Float, 16, TextureDecoder_BC3_SRGB_uncompress::getInstance());
-        bcFallback(F::BC4_UNORM, MTL::PixelFormatRG32Float, 8, TextureDecoder_BC4_UNORM_uncompress::getInstance());
+        bcFallback(F::BC1_UNORM, MTL::PixelFormatRGBA8Unorm, 4, TextureDecoder_BC1_UNORM_uncompress::getInstance());
+        bcFallback(F::BC1_SRGB, MTL::PixelFormatRGBA8Unorm_sRGB, 4, TextureDecoder_BC1_SRGB_uncompress::getInstance());
+        bcFallback(F::BC2_UNORM, MTL::PixelFormatRGBA8Unorm, 4, TextureDecoder_BC2_UNORM_uncompress::getInstance());
+        bcFallback(F::BC2_SRGB, MTL::PixelFormatRGBA8Unorm_sRGB, 4, TextureDecoder_BC2_SRGB_uncompress::getInstance());
+        bcFallback(F::BC3_UNORM, MTL::PixelFormatRGBA8Unorm, 4, TextureDecoder_BC3_UNORM_uncompress::getInstance());
+        bcFallback(F::BC3_SRGB, MTL::PixelFormatRGBA8Unorm_sRGB, 4, TextureDecoder_BC3_SRGB_uncompress::getInstance());
+        bcFallback(F::BC4_UNORM, MTL::PixelFormatR8Unorm, 1, TextureDecoder_BC4_UNORM_uncompress::getInstance());
         bcFallback(F::BC4_SNORM, MTL::PixelFormatRG32Float, 8, TextureDecoder_BC4_UNORM_uncompress::getInstance());
-        bcFallback(F::BC5_UNORM, MTL::PixelFormatRG32Float, 8, TextureDecoder_BC5_UNORM_uncompress::getInstance());
+        bcFallback(F::BC5_UNORM, MTL::PixelFormatRG8Unorm, 2, TextureDecoder_BC5_UNORM_uncompress::getInstance());
         bcFallback(F::BC5_SNORM, MTL::PixelFormatRG32Float, 8, TextureDecoder_BC5_SNORM_uncompress::getInstance());
     }
 #endif
