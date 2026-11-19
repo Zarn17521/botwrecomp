@@ -7,7 +7,12 @@
 class MetalMemoryManager
 {
 public:
+#if TARGET_OS_IOS
+    // Start with a smaller staging ring on iPhone; it grows on demand.
+    MetalMemoryManager(class MetalRenderer* metalRenderer) : m_mtlr{metalRenderer}, m_stagingAllocator(m_mtlr, m_mtlr->GetOptimalBufferStorageMode(), 8u * 1024 * 1024), m_indexAllocator(m_mtlr, m_mtlr->GetOptimalBufferStorageMode(), 4u * 1024 * 1024) {}
+#else
     MetalMemoryManager(class MetalRenderer* metalRenderer) : m_mtlr{metalRenderer}, m_stagingAllocator(m_mtlr, m_mtlr->GetOptimalBufferStorageMode(), 32u * 1024 * 1024), m_indexAllocator(m_mtlr, m_mtlr->GetOptimalBufferStorageMode(), 4u * 1024 * 1024) {}
+#endif
     ~MetalMemoryManager();
 
     MetalSynchronizedRingAllocator& GetStagingAllocator()
