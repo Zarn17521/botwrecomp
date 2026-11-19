@@ -402,7 +402,7 @@ void LatteTC_CleanupUnusedTextures()
 	std::vector<LatteTexture*>& allTextures = LatteTexture::GetAllTextures();
 	if (!allTextures.empty())
 	{
-		for (sint32 c = 0; c < 25; c++)
+		for (sint32 c = 0; c < 64; c++)
 		{
 			if (currentScanIndex >= allTextures.size())
 				currentScanIndex = 0;
