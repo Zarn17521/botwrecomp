@@ -1,66 +1,142 @@
-name: BOTW No-BC IPA (iPhone 15 / A16)
+name: BOTW Recomp iPhone 15 A16 IPA
 
 on:
   workflow_dispatch:
     inputs:
       bundle_id:
-        description: 'Bundle ID (optional)'
-        required: false
-        default: 'com.zarn17521.BotWRecomp'
-      deployment_target:
-        description: 'iOS deployment target'
-        required: false
-        default: '18.0'
+        description: "Bundle identifier (must be unique for your signing account)"
+        required: true
+        default: "com.zarn17521.BotWRecomp"
+
+permissions:
+  contents: read
 
 jobs:
   build-iphone15:
     runs-on: macos-15
-    timeout-minutes: 90
+    timeout-minutes: 360
+    env:
+      BOTW_BUNDLE_ID: ${{ inputs.bundle_id }}
+      BOTW_IOS_JOBS: "4"
+      BOTW_IOS_MIN: "18.0"
+      BOTW_IOS_DEPS: ${{ github.workspace }}/ios-deps
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Homebrew & dependencies
+      - name: Select Xcode and show toolchain
         run: |
-          brew update
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Set up Python and uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Download personal Wii U BOTW game dump
+        env:
+          BOTW_GAME_ARCHIVE_URL: ${{ secrets.BOTW_GAME_ARCHIVE_URL }}
+          BOTW_GAME_ARCHIVE_TOKEN: ${{ secrets.BOTW_GAME_ARCHIVE_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BOTW_GAME_ARCHIVE_URL:-}" ]; then
+            echo "::error::Missing repository secret BOTW_GAME_ARCHIVE_URL. Set it to a direct ZIP download of your own extracted Wii U BOTW game folder."
+            exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/botw-download" "$RUNNER_TEMP/botw-unpack"
+          if [ -n "${BOTW_GAME_ARCHIVE_TOKEN:-}" ]; then
+            curl --fail --location --retry 3 --retry-all-errors \
+              -H "Authorization: Bearer $BOTW_GAME_ARCHIVE_TOKEN" \
+              "$BOTW_GAME_ARCHIVE_URL" -o "$RUNNER_TEMP/botw-download/game.zip"
+          else
+            curl --fail --location --retry 3 --retry-all-errors \
+              "$BOTW_GAME_ARCHIVE_URL" -o "$RUNNER_TEMP/botw-download/game.zip"
+          fi
+          unzip -q "$RUNNER_TEMP/botw-download/game.zip" -d "$RUNNER_TEMP/botw-unpack"
+          RPX="$(find "$RUNNER_TEMP/botw-unpack" -type f -path '*/code/U-King.rpx' -print -quit)"
+          if [ -z "$RPX" ]; then
+            echo "::error::ZIP must contain the extracted Wii U game folder with code/U-King.rpx, content/, and meta/."
+            exit 1
+          fi
+          GAME_DIR="${RPX%/code/U-King.rpx}"
+          test -d "$GAME_DIR/content"
+          test -d "$GAME_DIR/meta"
+          echo "BOTW_GAME=$GAME_DIR" >> "$GITHUB_ENV"
+          echo "Validated BOTW game folder."
+
+      - name: Recompile Wii U game code to native C++
+        run: |
+          set -euo pipefail
+          uv run python -I tools/recompile.py "$BOTW_GAME/code/U-King.rpx" generated
+          test -s generated/table.cpp
+          test -s generated/hle_stubs.cpp
+          echo "Generated C++ files: $(find generated -maxdepth 1 -name '*.cpp' | wc -l | tr -d ' ')"
+          test -s generated/report.txt
+
+      - name: Install build tools
+        run: |
+          set -euo pipefail
           brew install cmake ninja boost glm
 
-      - name: Build iOS dependencies (SDL3, fmt, zstd)
+      - name: Build static iOS dependencies
         run: |
+          set -euo pipefail
           chmod +x ios/scripts/*.sh
           ios/scripts/build_deps.sh iphoneos
 
-      - name: Configure & build for iPhone 15 (arm64 / A16, No-BC)
-        env:
-          BOTW_BUNDLE_ID: ${{ inputs.bundle_id }}
-          BOTW_IOS_JOBS: 4
+      - name: Configure iPhone arm64 Release build
         run: |
-          # No-BC: force CPU-side BC decode path if needed, and target A16-compatible flags
-          export BOTW_CPU_FLAGS="-mcpu=apple-a16"
-          ios/scripts/build.sh iphoneos
+          set -euo pipefail
+          cmake -S ios -B build-ios/iphoneos -G Ninja \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=18.0 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBOTW_BUNDLE_ID="$BOTW_BUNDLE_ID" \
+            -DBOTW_IOS_DEPS="$BOTW_IOS_DEPS"
 
-      - name: Package unsigned IPA
+      - name: Compile BotWRecomp (4 jobs to limit runner memory)
         run: |
+          set -euo pipefail
+          nice -n 10 cmake --build build-ios/iphoneos --parallel "$BOTW_IOS_JOBS"
           APP="build-ios/iphoneos/BotWRecomp.app"
+          test -d "$APP"
+          test -s "$APP/BotWRecomp"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist"
+
+      - name: Package unsigned IPA for SideStore
+        run: |
+          set -euo pipefail
           mkdir -p Payload
-          cp -R "$APP" Payload/
-          zip -r BotWRecomp-iPhone15-NoBC-unsigned.ipa Payload
+          cp -R build-ios/iphoneos/BotWRecomp.app Payload/
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleSupportedPlatforms' Payload/BotWRecomp.app/Info.plist
+          zip -qry BotWRecomp-iPhone15-A16-unsigned.ipa Payload
           rm -rf Payload
+          ls -lh BotWRecomp-iPhone15-A16-unsigned.ipa
 
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BotWRecomp-iPhone15-NoBC-IPA
-          path: BotWRecomp-iPhone15-NoBC-unsigned.ipa
+          name: BotWRecomp-iPhone15-A16-unsigned-IPA
+          path: BotWRecomp-iPhone15-A16-unsigned.ipa
           retention-days: 7
 
-      - name: Upload build logs
-        if: always()
+      - name: Upload diagnostics if build fails
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: build-logs
+          name: BotWRecomp-iPhone15-build-diagnostics
           path: |
-            build-ios/**/*.log
-            /Users/runner/Library/Logs/DiagnosticReports/
-          retention-days: 3
+            generated/report.txt
+            build-ios/iphoneos/CMakeFiles/CMake*.log
+            build-ios/iphoneos/build.ninja
+          if-no-files-found: ignore
+          retention-days: 7
