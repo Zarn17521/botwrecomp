@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       botw_base_url:
-        description: "Direct download URL for your own BOTW Wii U Base ZIP"
+        description: "Google Drive share link or direct download URL for your own BOTW Wii U Base ZIP"
         required: true
         type: string
       botw_update_url:
-        description: "Direct download URL for your own BOTW Wii U Update v208 ZIP"
+        description: "Google Drive share link or direct download URL for your own BOTW Wii U Update v208 ZIP"
         required: true
         type: string
 
@@ -21,7 +21,6 @@ concurrency:
 
 jobs:
   build:
-    # Use a current macOS runner with Xcode and the iOS SDK.
     runs-on: macos-26
     timeout-minutes: 360
     steps:
@@ -48,8 +47,14 @@ jobs:
           echo "::add-mask::$BOTW_BASE_URL"
           echo "::add-mask::$BOTW_UPDATE_URL"
           mkdir -p "$RUNNER_TEMP/botw/base" "$RUNNER_TEMP/botw/update" game
-          curl --fail --location --retry 4 --retry-all-errors "$BOTW_BASE_URL" -o "$RUNNER_TEMP/base.zip"
-          curl --fail --location --retry 4 --retry-all-errors "$BOTW_UPDATE_URL" -o "$RUNNER_TEMP/update.zip"
+
+          # gdown handles Google Drive share pages and their download-confirmation flow.
+          uvx --from gdown gdown "$BOTW_BASE_URL" -O "$RUNNER_TEMP/base.zip"
+          uvx --from gdown gdown "$BOTW_UPDATE_URL" -O "$RUNNER_TEMP/update.zip"
+
+          # Fail here with a clear error if Drive returned HTML or an invalid archive.
+          unzip -tq "$RUNNER_TEMP/base.zip"
+          unzip -tq "$RUNNER_TEMP/update.zip"
           ditto -x -k "$RUNNER_TEMP/base.zip" "$RUNNER_TEMP/botw/base"
           ditto -x -k "$RUNNER_TEMP/update.zip" "$RUNNER_TEMP/botw/update"
 
