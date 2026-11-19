@@ -130,7 +130,7 @@ void MetalSynchronizedRingAllocator::CleanupBuffer(MTL::CommandBuffer* latestFin
 	if (m_buffers.size() >= 2)
 	{
 		auto& lastBuffer = m_buffers.back();
-		if (lastBuffer.cleanupCounter >= 1000)
+		if (lastBuffer.cleanupCounter >= 300)
 		{
 			// release buffer
 			lastBuffer.mtlBuffer->release();
