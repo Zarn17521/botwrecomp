@@ -29,7 +29,13 @@ void* MetalMemoryManager::AcquireTextureUploadBuffer(size_t size)
 void MetalMemoryManager::ReleaseTextureUploadBuffer(uint8* mem)
 {
     cemu_assert_debug(m_textureUploadBuffer.data() == mem);
-	m_textureUploadBuffer.clear();
+    m_textureUploadBuffer.clear();
+
+    // Keep normal upload capacity for reuse, but return unusually large temporary
+    // CPU-side texture staging allocations to the system after the upload completes.
+    constexpr size_t MAX_RETAINED_TEXTURE_UPLOAD_CAPACITY = 64u * 1024 * 1024;
+    if (m_textureUploadBuffer.capacity() > MAX_RETAINED_TEXTURE_UPLOAD_CAPACITY)
+        std::vector<uint8>().swap(m_textureUploadBuffer);
 }
 
 void MetalMemoryManager::InitBufferCache(size_t size)
