@@ -1,6 +1,9 @@
 name: BOTW Recomp iPhone 15 A16 IPA
 
 on:
+  push:
+    branches:
+      - ios-a16-rgba8-texture-memory
   workflow_dispatch:
     inputs:
       bundle_id:
