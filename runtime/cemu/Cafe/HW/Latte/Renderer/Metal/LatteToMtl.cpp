@@ -187,6 +187,7 @@ void CheckForPixelFormatSupport(const MetalPixelFormatSupport& support)
 #if TARGET_OS_IOS  // iOS port (ios/): no BC support -> decode on the CPU (Cemu's GL fallback decoders, float output)
     if (!support.m_supportsBCTextureCompression)
     {
+        cemuLog_log(LogType::Force, "Metal BC texture compression is unavailable; using expanded floating-point CPU texture fallbacks (higher memory use)");
         auto bcFallback = [](Latte::E_GX2SURFFMT f, MTL::PixelFormat pf, size_t bytesPerTexel, TextureDecoder* decoder) {
             auto& e = MTL_COLOR_FORMAT_TABLE[f];
             e.pixelFormat = pf;
