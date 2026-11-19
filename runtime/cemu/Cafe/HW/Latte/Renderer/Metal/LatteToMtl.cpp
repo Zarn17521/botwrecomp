@@ -204,7 +204,7 @@ void CheckForPixelFormatSupport(const MetalPixelFormatSupport& support)
         bcFallback(F::BC3_UNORM, MTL::PixelFormatRGBA8Unorm, 4, TextureDecoder_BC3_UNORM_uncompress::getInstance());
         bcFallback(F::BC3_SRGB, MTL::PixelFormatRGBA8Unorm_sRGB, 4, TextureDecoder_BC3_SRGB_uncompress::getInstance());
         bcFallback(F::BC4_UNORM, MTL::PixelFormatR8Unorm, 1, TextureDecoder_BC4_UNORM_uncompress::getInstance());
-        bcFallback(F::BC4_SNORM, MTL::PixelFormatRG32Float, 8, TextureDecoder_BC4_UNORM_uncompress::getInstance());
+        bcFallback(F::BC4_SNORM, MTL::PixelFormatR8Unorm, 1, TextureDecoder_BC4_UNORM_uncompress::getInstance());
         bcFallback(F::BC5_UNORM, MTL::PixelFormatRG8Unorm, 2, TextureDecoder_BC5_UNORM_uncompress::getInstance());
         bcFallback(F::BC5_SNORM, MTL::PixelFormatRG32Float, 8, TextureDecoder_BC5_SNORM_uncompress::getInstance());
     }
