@@ -1,0 +1,66 @@
+name: BOTW No-BC IPA (iPhone 15 / A16)
+
+on:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: 'Bundle ID (optional)'
+        required: false
+        default: 'com.zarn17521.BotWRecomp'
+      deployment_target:
+        description: 'iOS deployment target'
+        required: false
+        default: '18.0'
+
+jobs:
+  build-iphone15:
+    runs-on: macos-15
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Homebrew & dependencies
+        run: |
+          brew update
+          brew install cmake ninja boost glm
+
+      - name: Build iOS dependencies (SDL3, fmt, zstd)
+        run: |
+          chmod +x ios/scripts/*.sh
+          ios/scripts/build_deps.sh iphoneos
+
+      - name: Configure & build for iPhone 15 (arm64 / A16, No-BC)
+        env:
+          BOTW_BUNDLE_ID: ${{ inputs.bundle_id }}
+          BOTW_IOS_JOBS: 4
+        run: |
+          # No-BC: force CPU-side BC decode path if needed, and target A16-compatible flags
+          export BOTW_CPU_FLAGS="-mcpu=apple-a16"
+          ios/scripts/build.sh iphoneos
+
+      - name: Package unsigned IPA
+        run: |
+          APP="build-ios/iphoneos/BotWRecomp.app"
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -r BotWRecomp-iPhone15-NoBC-unsigned.ipa Payload
+          rm -rf Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BotWRecomp-iPhone15-NoBC-IPA
+          path: BotWRecomp-iPhone15-NoBC-unsigned.ipa
+          retention-days: 7
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build-ios/**/*.log
+            /Users/runner/Library/Logs/DiagnosticReports/
+          retention-days: 3
