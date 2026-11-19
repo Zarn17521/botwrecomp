@@ -6,10 +6,11 @@
 #include <string>
 
 struct Settings {
-    int fps = 60;          // 30 or 60
 #if TARGET_OS_IOS
-    float scale = 1;       // render scale (phones: native 720p); 0 = fit the display; applies at the next launch
+    int fps = 30;          // iPhone default: prefer stable pacing and lower sustained GPU load
+    float scale = 1;       // iPhone default: native 720p render targets to reduce GPU memory use
 #else
+    int fps = 60;          // 30 or 60
     float scale = 0;       // render scale; 0 = fit the display (takes effect at the next launch)
 #endif
     int display = 0;       // 0 fit (letterbox), 1 stretch, 2 fill (crop)
