@@ -1,0 +1,118 @@
+name: BOTW Wii U iOS IPA
+
+on:
+  workflow_dispatch:
+    inputs:
+      botw_base_url:
+        description: "Direct download URL for your own BOTW Wii U Base ZIP"
+        required: true
+        type: string
+      botw_update_url:
+        description: "Direct download URL for your own BOTW Wii U Update v208 ZIP"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: botw-ios-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    # Use a current macOS runner with Xcode and the iOS SDK.
+    runs-on: macos-26
+    timeout-minutes: 360
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install build tools
+        run: |
+          brew update
+          brew install cmake ninja uv boost glm
+
+      - name: Download and merge the user's game ZIPs
+        env:
+          BOTW_BASE_URL: ${{ inputs.botw_base_url }}
+          BOTW_UPDATE_URL: ${{ inputs.botw_update_url }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$BOTW_BASE_URL"
+          echo "::add-mask::$BOTW_UPDATE_URL"
+          mkdir -p "$RUNNER_TEMP/botw/base" "$RUNNER_TEMP/botw/update" game
+          curl --fail --location --retry 4 --retry-all-errors "$BOTW_BASE_URL" -o "$RUNNER_TEMP/base.zip"
+          curl --fail --location --retry 4 --retry-all-errors "$BOTW_UPDATE_URL" -o "$RUNNER_TEMP/update.zip"
+          ditto -x -k "$RUNNER_TEMP/base.zip" "$RUNNER_TEMP/botw/base"
+          ditto -x -k "$RUNNER_TEMP/update.zip" "$RUNNER_TEMP/botw/update"
+
+          BASE_ROOT="$(find "$RUNNER_TEMP/botw/base" -type f -path '*/code/U-King.rpx' -print -quit | sed 's#/code/U-King.rpx$##')"
+          UPDATE_ROOT="$(find "$RUNNER_TEMP/botw/update" -type d -name code -print -quit | sed 's#/code$##')"
+          if [ -z "$BASE_ROOT" ] || [ -z "$UPDATE_ROOT" ]; then
+            echo "ZIP layout not recognized. Base ZIP must contain code/U-King.rpx; update ZIP must contain code/, content/, and meta/." >&2
+            exit 1
+          fi
+          for d in code content meta; do
+            test -d "$BASE_ROOT/$d" || { echo "Base ZIP is missing $d/" >&2; exit 1; }
+            test -d "$UPDATE_ROOT/$d" || { echo "Update ZIP is missing $d/" >&2; exit 1; }
+          done
+          rsync -a "$BASE_ROOT/" game/
+          rsync -a "$UPDATE_ROOT/" game/
+          HASH="$(shasum -a 256 game/code/U-King.rpx | awk '{print $1}')"
+          EXPECTED="ba58da5b95ce929e005d058ceb08b9b2788d1ab2bbc8a6c189bbadca0bb34d30"
+          if [ "$HASH" != "$EXPECTED" ]; then
+            echo "Wrong game executable. Expected USA v208 U-King.rpx SHA-256 $EXPECTED, got $HASH" >&2
+            exit 1
+          fi
+          echo "Game ZIPs extracted and merged; USA v208 executable verified."
+
+      - name: Recompile BOTW PowerPC code to C++
+        run: |
+          set -euo pipefail
+          uv run --no-project --with cryptography python -I tools/recompile.py game/code/U-King.rpx generated
+
+      - name: Build iOS dependencies
+        env:
+          BOTW_IOS_JOBS: "4"
+        run: ios/scripts/build_deps.sh iphoneos
+
+      - name: Configure and compile unsigned iPhone app
+        env:
+          BOTW_IOS_JOBS: "4"
+          BOTW_BUNDLE_ID: "com.zarn17521.BotWRecomp"
+        run: |
+          set -euo pipefail
+          cmake -S ios -B build-ios/iphoneos -G Ninja \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=18.0 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBOTW_BUNDLE_ID="$BOTW_BUNDLE_ID" \
+            -DBOTW_IOS_DEPS="$GITHUB_WORKSPACE/ios-deps"
+          cmake --build build-ios/iphoneos --parallel "$BOTW_IOS_JOBS"
+
+      - name: Package unsigned IPA for SideStore signing
+        run: |
+          set -euo pipefail
+          APP="build-ios/iphoneos/BotWRecomp.app"
+          test -d "$APP" || { echo "Build did not produce $APP" >&2; exit 1; }
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          ditto "$APP" "$RUNNER_TEMP/ipa/Payload/BotWRecomp.app"
+          (cd "$RUNNER_TEMP/ipa" && /usr/bin/zip -qry "$GITHUB_WORKSPACE/BotWRecomp-iOS-unsigned.ipa" Payload)
+          ls -lh BotWRecomp-iOS-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BotWRecomp-iOS-unsigned
+          path: BotWRecomp-iOS-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 1
