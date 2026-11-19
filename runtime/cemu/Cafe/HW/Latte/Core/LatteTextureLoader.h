@@ -1571,7 +1571,7 @@ class TextureDecoder_BC1_UNORM_uncompress_generic : public TextureDecoder
 public:
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 4 * 4;
+		return 4;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -1591,15 +1591,15 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 16; // write to target buffer
+						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 4; // write to target buffer
 						float red = rgbaBlock[(px + py * 4) * 4 + 0];
 						float green = rgbaBlock[(px + py * 4) * 4 + 1];
 						float blue = rgbaBlock[(px + py * 4) * 4 + 2];
 						float alpha = rgbaBlock[(px + py * 4) * 4 + 3];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = green;
-						*(float*)(outputData + pixelOffset + 8) = blue;
-						*(float*)(outputData + pixelOffset + 12) = alpha;
+						outputData[pixelOffset + 0] = (uint8)(red * 255.0f);
+						outputData[pixelOffset + 1] = (uint8)(green * 255.0f);
+						outputData[pixelOffset + 2] = (uint8)(blue * 255.0f);
+						outputData[pixelOffset + 3] = (uint8)(alpha * 255.0f);
 					}
 				}
 			}
@@ -1697,7 +1697,7 @@ public:
 
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 4 * 4;
+		return 4;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -1717,15 +1717,15 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 16; // write to target buffer
+						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 4; // write to target buffer
 						float red = rgbaBlock[(px + py * 4) * 4 + 0];
 						float green = rgbaBlock[(px + py * 4) * 4 + 1];
 						float blue = rgbaBlock[(px + py * 4) * 4 + 2];
 						float alpha = rgbaBlock[(px + py * 4) * 4 + 3];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = green;
-						*(float*)(outputData + pixelOffset + 8) = blue;
-						*(float*)(outputData + pixelOffset + 12) = alpha;
+						outputData[pixelOffset + 0] = (uint8)(red * 255.0f);
+						outputData[pixelOffset + 1] = (uint8)(green * 255.0f);
+						outputData[pixelOffset + 2] = (uint8)(blue * 255.0f);
+						outputData[pixelOffset + 3] = (uint8)(alpha * 255.0f);
 					}
 				}
 			}
@@ -1753,7 +1753,7 @@ public:
 
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 4 * 4;
+		return 4;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -1774,15 +1774,15 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 16; // write to target buffer
+						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 4; // write to target buffer
 						float red = rgbaBlock[(px + py * 4) * 4 + 0];
 						float green = rgbaBlock[(px + py * 4) * 4 + 1];
 						float blue = rgbaBlock[(px + py * 4) * 4 + 2];
 						float alpha = rgbaBlock[(px + py * 4) * 4 + 3];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = green;
-						*(float*)(outputData + pixelOffset + 8) = blue;
-						*(float*)(outputData + pixelOffset + 12) = alpha;
+						outputData[pixelOffset + 0] = (uint8)(red * 255.0f);
+						outputData[pixelOffset + 1] = (uint8)(green * 255.0f);
+						outputData[pixelOffset + 2] = (uint8)(blue * 255.0f);
+						outputData[pixelOffset + 3] = (uint8)(alpha * 255.0f);
 					}
 				}
 			}
@@ -1811,7 +1811,7 @@ public:
 
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 4 * 4;
+		return 4;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -1831,15 +1831,15 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 16; // write to target buffer
+						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 4; // write to target buffer
 						float red = rgbaBlock[(px + py * 4) * 4 + 0];
 						float green = rgbaBlock[(px + py * 4) * 4 + 1];
 						float blue = rgbaBlock[(px + py * 4) * 4 + 2];
 						float alpha = rgbaBlock[(px + py * 4) * 4 + 3];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = green;
-						*(float*)(outputData + pixelOffset + 8) = blue;
-						*(float*)(outputData + pixelOffset + 12) = alpha;
+						outputData[pixelOffset + 0] = (uint8)(red * 255.0f);
+						outputData[pixelOffset + 1] = (uint8)(green * 255.0f);
+						outputData[pixelOffset + 2] = (uint8)(blue * 255.0f);
+						outputData[pixelOffset + 3] = (uint8)(alpha * 255.0f);
 					}
 				}
 			}
@@ -1916,7 +1916,7 @@ public:
 
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 2 * 4;
+		return 1;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -1937,10 +1937,10 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 8; // write to target buffer
+						sint32 pixelOffset = (x + px + yc * textureLoader->width); // write to target buffer
 						float red = rBlock[(px + py * 4) * 1 + 0];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = 0.0f;
+						outputData[pixelOffset] = (uint8)(red * 255.0f);
+						
 					}
 				}
 			}
@@ -2001,7 +2001,7 @@ public:
 
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 2 * 4;
+		return 2;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -2022,11 +2022,11 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 8; // write to target buffer
+						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 2; // write to target buffer
 						float red = rgBlock[(px + py * 4) * 2 + 0];
 						float green = rgBlock[(px + py * 4) * 2 + 1];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = green;
+						outputData[pixelOffset + 0] = (uint8)(red * 255.0f);
+						outputData[pixelOffset + 1] = (uint8)(green * 255.0f);
 					}
 				}
 			}
