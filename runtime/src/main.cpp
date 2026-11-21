@@ -79,6 +79,7 @@ int main(int argc, char** argv) {
     }
     settings::set(opt, false);  // this run only; the menu saves its changes
     g_render_scale = opt.scale;
+    g_target_fps = opt.fps;
     if (g_game_root.empty()) {
         if (const char* e = getenv("BOTW_GAME")) g_game_root = e;
     }
@@ -109,6 +110,12 @@ int main(int argc, char** argv) {
         LOG("render scale %.3f (%dx%d for a %dx%d display)", g_render_scale, (int)(1280 * g_render_scale),
             (int)(720 * g_render_scale), dw, dh);
     }
+#if defined(BOTW_LOW_MEMORY)
+    // Aggressive clamp for iPhone 15 (6 GB). Prevents auto-scale or saved settings from pushing memory too high.
+    if (g_render_scale > 0.6f) g_render_scale = 0.5f;
+    if (g_target_fps > 30) g_target_fps = 30;
+    LOG("iPhone 15 low-memory mode active: scale=%.2f fps=%d", g_render_scale, g_target_fps);
+#endif
     debug_watch_init();
     if (capture_every) latte::set_capture(capture_every, (g_user_root + "/captures").c_str());
 
