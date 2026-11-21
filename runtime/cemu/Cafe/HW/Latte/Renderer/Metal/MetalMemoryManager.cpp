@@ -29,7 +29,16 @@ void* MetalMemoryManager::AcquireTextureUploadBuffer(size_t size)
 void MetalMemoryManager::ReleaseTextureUploadBuffer(uint8* mem)
 {
     cemu_assert_debug(m_textureUploadBuffer.data() == mem);
-	m_textureUploadBuffer.clear();
+    m_textureUploadBuffer.clear();
+
+    // Keep a small reusable scratch buffer, but don't pin a large uncompressed
+    // BC texture decode allocation for the lifetime of the renderer. On iOS
+    // unified memory this host allocation competes directly with the app/GPU.
+    constexpr size_t kMaxRetainedTextureUploadBytes = 16u * 1024u * 1024u;
+    if (m_textureUploadBuffer.capacity() > kMaxRetainedTextureUploadBytes)
+    {
+        std::vector<uint8>().swap(m_textureUploadBuffer);
+    }
 }
 
 void MetalMemoryManager::InitBufferCache(size_t size)
