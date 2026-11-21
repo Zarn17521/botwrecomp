@@ -2052,7 +2052,9 @@ public:
 
 	sint32 getBytesPerTexel(LatteTextureLoaderCtx* textureLoader) override
 	{
-		return 2 * 4;
+		// Store decoded signed-normalized channels as RG8Snorm instead of RG32Float.
+		// This reduces the expanded BC5_SNORM texture footprint from 8 to 2 bytes/texel.
+		return 2;
 	}
 
 	void decode(LatteTextureLoaderCtx* textureLoader, uint8* outputData) override
@@ -2064,7 +2066,6 @@ public:
 				uint8* blockData = LatteTextureLoader_GetInput(textureLoader, x, y);
 				sint32 blockSizeX = (std::min)(4, textureLoader->width - x);
 				sint32 blockSizeY = (std::min)(4, textureLoader->height - y);
-				// decode 4x4 pixels at once
 				float rgBlock[4 * 4 * 2];
 				decodeBC5Block_SNORM(blockData, rgBlock);
 
@@ -2073,11 +2074,11 @@ public:
 					sint32 yc = y + py;
 					for (sint32 px = 0; px < blockSizeX; px++)
 					{
-						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 8; // write to target buffer
-						float red = rgBlock[(px + py * 4) * 2 + 0];
-						float green = rgBlock[(px + py * 4) * 2 + 1];
-						*(float*)(outputData + pixelOffset + 0) = red;
-						*(float*)(outputData + pixelOffset + 4) = green;
+						sint32 pixelOffset = (x + px + yc * textureLoader->width) * 2;
+						float red = std::max(-1.0f, std::min(1.0f, rgBlock[(px + py * 4) * 2 + 0]));
+						float green = std::max(-1.0f, std::min(1.0f, rgBlock[(px + py * 4) * 2 + 1]));
+						outputData[pixelOffset + 0] = (uint8)(sint8)(red * 127.0f);
+						outputData[pixelOffset + 1] = (uint8)(sint8)(green * 127.0f);
 					}
 				}
 			}
@@ -2086,7 +2087,6 @@ public:
 
 	void decodePixelToRGBA(uint8* blockData, uint8* outputPixel, uint8 blockOffsetX, uint8 blockOffsetY) override
 	{
-		// todo: fix BC5 SNORM dumping
 		float rgBlock[4 * 4 * 2];
 		decodeBC5Block_SNORM(blockData, rgBlock);
 		float red = rgBlock[(blockOffsetX + blockOffsetY * 4) * 2 + 0];
