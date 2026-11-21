@@ -11,6 +11,11 @@ on:
         description: "Google Drive share link or direct download URL for your own BOTW Wii U Update v208 ZIP"
         required: true
         type: string
+      low_memory:
+        description: "Enable low-memory mode for iPhone 15 (6GB): 30fps + 0.5x scale"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -85,15 +90,21 @@ jobs:
 
       - name: Build iOS dependencies
         env:
-          BOTW_IOS_JOBS: "4"
+          BOTW_IOS_JOBS: "2"
         run: ios/scripts/build_deps.sh iphoneos
 
       - name: Configure and compile unsigned iPhone app
         env:
-          BOTW_IOS_JOBS: "4"
+          BOTW_IOS_JOBS: "2"
           BOTW_BUNDLE_ID: "com.zarn17521.BotWRecomp"
+          LOW_MEMORY: ${{ inputs.low_memory }}
         run: |
           set -euo pipefail
+          EXTRA=""
+          if [ "$LOW_MEMORY" = "true" ]; then
+            EXTRA="-DBOTW_LOW_MEMORY=ON"
+            echo "Building with low-memory mode (30fps + 0.5x scale) for iPhone 15"
+          fi
           cmake -S ios -B build-ios/iphoneos -G Ninja \
             -DCMAKE_SYSTEM_NAME=iOS \
             -DCMAKE_OSX_SYSROOT=iphoneos \
@@ -101,7 +112,8 @@ jobs:
             -DCMAKE_OSX_DEPLOYMENT_TARGET=18.0 \
             -DCMAKE_BUILD_TYPE=Release \
             -DBOTW_BUNDLE_ID="$BOTW_BUNDLE_ID" \
-            -DBOTW_IOS_DEPS="$GITHUB_WORKSPACE/ios-deps"
+            -DBOTW_IOS_DEPS="$GITHUB_WORKSPACE/ios-deps" \
+            $EXTRA
           cmake --build build-ios/iphoneos --parallel "$BOTW_IOS_JOBS"
 
       - name: Package unsigned IPA for SideStore signing
@@ -120,4 +132,4 @@ jobs:
           name: BotWRecomp-iOS-unsigned
           path: BotWRecomp-iOS-unsigned.ipa
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7

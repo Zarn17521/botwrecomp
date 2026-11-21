@@ -28,6 +28,7 @@ else()
 endif()
 set(BOTW_BUNDLE_ID "com.example.BotWRecomp" CACHE STRING "CFBundleIdentifier (build.sh passes BOTW_BUNDLE_ID)")
 set(BOTW_IOS_DEPS "${ROOT}/ios-deps" CACHE PATH "ios/scripts/build_deps.sh output")
+option(BOTW_LOW_MEMORY "Enable low-memory defaults for 6GB devices (iPhone 15): 30fps + 0.5x scale" OFF)
 set(DEPS ${BOTW_IOS_DEPS}/prefix-${BOTW_SDK})
 
 # deps live outside the SDK sysroot, which the iOS platform module restricts find_package to
@@ -77,6 +78,9 @@ target_include_directories(cemu_gpu PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/compat
 target_link_libraries(cemu_gpu PRIVATE fmt::fmt zstd::libzstd_static)
 target_compile_definitions(cemu_gpu PRIVATE BOOST_NOWIDE_NO_LIB ENABLE_METAL BOTWRECOMP IMGUI_IMPL_METAL_CPP
   EMULATOR_VERSION_MAJOR=2 EMULATOR_VERSION_MINOR=6 EMULATOR_VERSION_PATCH=0 EMULATOR_HASH=a53cf0e)
+if(BOTW_LOW_MEMORY)
+  target_compile_definitions(cemu_gpu PRIVATE BOTW_LOW_MEMORY=1)
+endif()
 target_compile_options(cemu_gpu PRIVATE -w -O2 -g1
   "SHELL:-include ${CMAKE_CURRENT_SOURCE_DIR}/compat/botw_ios_platform.h" "SHELL:-include Common/precompiled.h")
 
@@ -92,6 +96,9 @@ target_include_directories(BotWRecomp PRIVATE ${ROOT}/runtime/include ${ROOT}/ru
 )
 target_compile_options(BotWRecomp PRIVATE -Wall -Wno-unused-function -Wno-unused-variable -fwrapv ${BOTW_CPU}
   $<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>)
+if(BOTW_LOW_MEMORY)
+  target_compile_definitions(BotWRecomp PRIVATE BOTW_LOW_MEMORY=1)
+endif()
 target_link_libraries(BotWRecomp PRIVATE z SDL3::SDL3-static fmt::fmt zstd::libzstd_static
   "-framework Metal" "-framework QuartzCore" "-framework Foundation" "-framework UIKit"
   "-framework CoreGraphics" "-framework ImageIO" "-framework UniformTypeIdentifiers" "-framework VideoToolbox"

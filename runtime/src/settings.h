@@ -6,11 +6,16 @@
 #include <string>
 
 struct Settings {
+#if defined(BOTW_LOW_MEMORY)
+    int fps = 30;          // forced low for 6GB devices (iPhone 15)
+    float scale = 0.5f;    // lower render scale to reduce memory (applies at next launch)
+#else
     int fps = 60;          // 30 or 60
 #if TARGET_OS_IOS
     float scale = 1;       // render scale (phones: native 720p); 0 = fit the display; applies at the next launch
 #else
     float scale = 0;       // render scale; 0 = fit the display (takes effect at the next launch)
+#endif
 #endif
     int display = 0;       // 0 fit (letterbox), 1 stretch, 2 fill (crop)
     int filter = 1;        // output scaling: 0 bilinear, 1 bicubic, 2 hermite, 3 nearest
